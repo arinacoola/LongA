@@ -74,6 +74,28 @@ public class BigInt{
         cOne.num[0]=1;
         return cOne;
     }
+
+    public class AddResult{
+        public BigInt sum;
+        public long carry;
+    }
+
+    public AddResult longAdd(BigInt other){
+        BigInt c = new BigInt();
+        long carry = 0;
+        for (int i=0;i<n;i++){
+            long temp = this.num[i]+other.num[i]+carry;
+            c.num[i]= (int) (temp& 0xFFFFFFFFL);
+            carry=temp>>w;
+        }
+        AddResult result = new AddResult();
+        result.sum=c;
+        result.carry=carry;
+        return result;
+    }
+
+
+
     }
 
 
