@@ -119,6 +119,36 @@ public class BigInt{
         return result;
     }
 
+    public BigInt longMulOneDigit(BigInt a ,int b){
+        BigInt c = new BigInt();
+        long carry =0;
+        for(int i=0;i<n;i++){
+            long temp = (a.num[i]& 0xFFFFFFFFL)*(b& 0xFFFFFFFFL)+carry;
+            c.num[i]=(int) (temp& 0xFFFFFFFFL);
+            carry=temp>>w;
+        }
+        c.num[n]= (int) carry;
+        return c;
+    }
+
+    public BigInt longShiftDigitsToHigh(BigInt a,int shift){
+        BigInt c = new BigInt();
+        for (int i=0;i+shift<n;i++){
+            c.num[i+shift] =a.num[i];
+        }
+        return c;
+    }
+
+    public BigInt longMul(BigInt a, BigInt b){
+        BigInt c = new BigInt();
+        for(int i=0;i<n;i++){
+            BigInt temp = longMulOneDigit(a,b.num[i]);
+            temp=longShiftDigitsToHigh(temp,i);
+            AddResult result = c.longAdd(temp);
+            c = result.sum;
+        }
+        return c;
+    }
 
 
     }
