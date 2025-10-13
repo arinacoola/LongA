@@ -3,8 +3,8 @@ public class BigInt{
     int[] num;
     public final static int n=64;
     public final static String Hex ="0123456789ABCDEF";
-    public BigInt() {
-        num =new int[n];
+    public BigInt(int size) {
+        num =new int[size];
     }
 
 
@@ -65,12 +65,12 @@ public class BigInt{
         }
 
     public static BigInt constZero(){
-        BigInt cZero=new BigInt();
+        BigInt cZero=new BigInt(n);
         return cZero;
     }
 
     public static BigInt constOne(){
-        BigInt cOne = new BigInt();
+        BigInt cOne = new BigInt(n);
         cOne.num[0]=1;
         return cOne;
     }
@@ -81,7 +81,7 @@ public class BigInt{
     }
 
     public AddResult longAdd(BigInt other){
-        BigInt c = new BigInt();
+        BigInt c = new BigInt(n);
         long carry = 0;
         for (int i=0;i<n;i++){
             long temp = this.num[i]+other.num[i]+carry;
@@ -100,7 +100,7 @@ public class BigInt{
     }
 
     public SubResult longSub(BigInt other){
-        BigInt c = new BigInt();
+        BigInt c = new BigInt(n);
         int borrow = 0;
         for(int i=0;i<n;i++){
             long temp =(this.num[i]& 0xFFFFFFFFL)-(other.num[i]& 0xFFFFFFFFL)-borrow;
@@ -120,7 +120,7 @@ public class BigInt{
     }
 
     public BigInt longMulOneDigit(BigInt a ,int b){
-        BigInt c = new BigInt();
+        BigInt c = new BigInt(n);
         long carry =0;
         for(int i=0;i<n;i++){
             long temp = (a.num[i]& 0xFFFFFFFFL)*(b& 0xFFFFFFFFL)+carry;
@@ -132,7 +132,7 @@ public class BigInt{
     }
 
     public BigInt longShiftDigitsToHigh(BigInt a,int shift){
-        BigInt c = new BigInt();
+        BigInt c = new BigInt(n);
         for (int i=0;i+shift<n;i++){
             c.num[i+shift] =a.num[i];
         }
@@ -140,12 +140,39 @@ public class BigInt{
     }
 
     public BigInt longMul(BigInt a, BigInt b){
-        BigInt c = new BigInt();
+        BigInt c = new BigInt(2n);
         for(int i=0;i<n;i++){
             BigInt temp = longMulOneDigit(a,b.num[i]);
             temp=longShiftDigitsToHigh(temp,i);
             AddResult result = c.longAdd(temp);
             c = result.sum;
+        }
+        return c;
+    }
+
+    public BigInt longSquare(BigInt a){
+        BigInt c = new BigInt(2*n);
+        for(int i=0;i<n;i++){
+            for(int j=0;j<n;j++){
+                long productPair = (a.num[i] & 0xFFFFFFFFL) * (a.num[j] & 0xFFFFFFFFL);
+                if(i!=j){
+                    productPair=productPair*2;
+                }
+                int pos=i+j;
+                long carry = productPair;
+                while(carry!=0 && pos<2*n){
+                    long sum = c.num[pos] + carry;
+                    if(sum<0x100000000L){
+                        c.num[pos] = (int) sum;
+                        carry=0;
+                    }
+                    else {
+                        c.num[pos] = (int) (sum -0x100000000L);
+                        carry=sum / 0x100000000L;
+                    }
+                    pos++;
+                }
+            }
         }
         return c;
     }
