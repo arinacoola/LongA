@@ -94,6 +94,31 @@ public class BigInt{
         return result;
     }
 
+    public class SubResult{
+        public BigInt sub;
+        public int borrow;
+    }
+
+    public SubResult longSub(BigInt other){
+        BigInt c = new BigInt();
+        int borrow = 0;
+        for(int i=0;i<n;i++){
+            long temp =(this.num[i]& 0xFFFFFFFFL)-(other.num[i]& 0xFFFFFFFFL)-borrow;
+            if(temp>=0){
+                c.num[i]= (int) temp;
+                borrow=0;
+            }
+            else{
+                c.num[i]= (int) (0x100000000L+temp);
+                borrow=1;
+            }
+        }
+        SubResult result = new SubResult();
+        result.sub=c;
+        result.borrow=borrow;
+        return result;
+    }
+
 
 
     }
