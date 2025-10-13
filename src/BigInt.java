@@ -7,6 +7,7 @@ public class BigInt{
         num =new int[n];
     }
 
+
     public String stringToHex(String string){
         if(string.length()<2) return string ;
         if(string.charAt(0) == '0'){
@@ -62,4 +63,17 @@ public class BigInt{
             }
         return hex;
         }
+
+    public static BigInt constZero(){
+        BigInt cZero=new BigInt();
+        return cZero;
     }
+
+    public static BigInt constOne(){
+        BigInt cOne = new BigInt();
+        cOne.num[0]=1;
+        return cOne;
+    }
+    }
+
+
