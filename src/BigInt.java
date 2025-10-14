@@ -140,7 +140,7 @@ public class BigInt{
     }
 
     public BigInt longMul(BigInt a, BigInt b){
-        BigInt c = new BigInt(2n);
+        BigInt c = new BigInt(2*n);
         for(int i=0;i<n;i++){
             BigInt temp = longMulOneDigit(a,b.num[i]);
             temp=longShiftDigitsToHigh(temp,i);
@@ -177,7 +177,76 @@ public class BigInt{
         return c;
     }
 
-
+    public int longCmp(BigInt a, BigInt b){
+        int i=n-1;
+        while (i >= 0 && a.num[i]==b.num[i]){
+            i=i-1;
+        }
+        if(i == -1){
+            return 0;
+        }
+        else {
+            if(a.num[i]>b.num[i]){
+                return 1;
+            }
+            else{
+                return -1;
+            }
+        }
     }
+
+    public int BitLength(BigInt a){
+        int i=n-1;
+        while(i>=0 && a.num[i]==0){
+            i=i-1;
+        }
+        if(i<0){
+            return 0;
+        }
+        else{
+            int block = a.num[i];
+            int bitPos = 0;
+                while (block > 0) {
+                    block = block >> 1;
+                    bitPos++;
+                }
+            return i * 32 + bitPos;
+        }
+    }
+
+    public class DivModResult{
+        BigInt r;
+        BigInt q;
+    }
+
+    public DivModResult longDivMod(BigInt a,BigInt b){
+        int k=BitLength(b);
+        BigInt r=a;
+        BigInt q= new BigInt(n);
+        while (longCmp(r, b) >= 0){
+            int t=BitLength(r);
+            BigInt c=longShiftDigitsToHigh(b,(t-k)/32);
+            if(longCmp(r,c)==-1){
+                t=t-1;
+                c=longShiftDigitsToHigh(b,(t-k)/32);
+            }
+            r=r.longSub(c).sub;
+            BigInt temp = new BigInt(n);
+            int shiftBits = t-k;
+            int shiftBlock=shiftBits/32;
+            int posBit=shiftBits%32;
+            temp.num[shiftBlock]= (int) (1L<<posBit);
+            AddResult result = q.longAdd(temp);
+            q=result.sum;
+        }
+
+        DivModResult result = new DivModResult();
+        result.q=q;
+        result.r=r;
+        return result;
+    }
+
+
+}
 
 
