@@ -1,174 +1,185 @@
-public class BigInt{
-    public final static int w=32;
+public class BigInt {
+    public final static int w = 32;
     int[] num;
-    public final static int n=64;
-    public final static String Hex ="0123456789ABCDEF";
+    public final static int n = 64;
+    public final static String Hex = "0123456789ABCDEF";
+
     public BigInt(int size) {
-        num =new int[size];
+        num = new int[size];
     }
 
-
-    public String stringToHex(String string){
-        if(string.length()<2) return string ;
-        if(string.charAt(0) == '0'){
-            if (string.charAt(1)=='x'||string.charAt(1)=='X'){
-                    string=string.substring(2);
-                }
+    public String stringToHex(String string) {
+        if (string.length() < 2) return string;
+        if (string.charAt(0) == '0') {
+            if (string.charAt(1) == 'x' || string.charAt(1) == 'X') {
+                string = string.substring(2);
+            }
         }
 
-        string=string.toUpperCase();
+        string = string.toUpperCase();
         return string;
-
     }
 
-    public int[]  hexToBlock(String string) {
+    public int[] hexToBlock(String string) {
         int blocks = string.length() / 8;
         if (string.length() % 8 != 0) {
-            blocks = blocks + 1;
+            blocks++;
         }
+
         int[] num = new int[blocks];
         int endBlock = string.length();
+        int blockIndex = 0;
         while (endBlock > 0) {
             int startBlock = endBlock - 8;
             if (startBlock < 0) {
                 startBlock = 0;
             }
             String block = string.substring(startBlock, endBlock);
-            endBlock = endBlock - 8;
+            num[blockIndex] = (int) Long.parseLong(block, 16);
+            endBlock = startBlock;
+            blockIndex++;
         }
+        for (int i = 0; i < blocks / 2; i++) {
+            int tmp = num[i];
+            num[i] = num[blocks - 1 - i];
+            num[blocks - 1 - i] = tmp;
+        }
+
         return num;
     }
 
-    public String blockToHex(int[] num){
-        String hex="";
-        for (int i= num.length-1;i>=0;i--){
+    public String blockToHex(int[] num) {
+        String hex = "";
+        for (int i = num.length - 1; i >= 0; i--) {
             int currentNum = num[i];
             String stringForBlock = "";
-            if(currentNum==0){
+            if (currentNum == 0) {
                 stringForBlock = "00000000";
             }
-            while (currentNum>0){
-                int res =currentNum % 16;
-                char symbol=Hex.charAt(res);
-                stringForBlock =symbol+stringForBlock;
-                currentNum =  currentNum / 16;
+            while (currentNum > 0) {
+                int res = currentNum % 16;
+                char symbol = Hex.charAt(res);
+                stringForBlock = symbol + stringForBlock;
+                currentNum = currentNum / 16;
             }
-            if(stringForBlock.length()<8){
+            if (stringForBlock.length() < 8) {
                 int notEnough = 8 - stringForBlock.length();
-                for(int j = 0; j<notEnough;j++){
-                    stringForBlock = "0"+stringForBlock;
+                for (int j = 0; j < notEnough; j++) {
+                    stringForBlock = "0" + stringForBlock;
                 }
             }
-            hex=hex+stringForBlock;
-            }
-        return hex;
+            hex = hex + stringForBlock;
         }
+        return "0x" + hex;
+    }
 
-    public static BigInt constZero(){
-        BigInt cZero=new BigInt(n);
+    public static BigInt constZero() {
+        BigInt cZero = new BigInt(n);
         return cZero;
     }
 
-    public static BigInt constOne(){
+    public static BigInt constOne() {
         BigInt cOne = new BigInt(n);
-        cOne.num[0]=1;
+        cOne.num[0] = 1;
         return cOne;
     }
 
-    public class AddResult{
+    public class AddResult {
         public BigInt sum;
         public long carry;
     }
 
-    public AddResult longAdd(BigInt other){
+    public AddResult longAdd(BigInt other) {
         BigInt c = new BigInt(n);
         long carry = 0;
-        for (int i=0;i<n;i++){
-            long temp = this.num[i]+other.num[i]+carry;
-            c.num[i]= (int) (temp& 0xFFFFFFFFL);
-            carry=temp>>w;
+        for (int i = 0; i < n; i++) {
+            long temp = this.num[i] + other.num[i] + carry;
+            c.num[i] = (int) (temp & 0xFFFFFFFFL);
+            carry = temp >> w;
         }
         AddResult result = new AddResult();
-        result.sum=c;
-        result.carry=carry;
+        result.sum = c;
+        result.carry = carry;
         return result;
     }
 
-    public class SubResult{
+    public class SubResult {
         public BigInt sub;
         public int borrow;
     }
 
-    public SubResult longSub(BigInt other){
+    public SubResult longSub(BigInt other) {
         BigInt c = new BigInt(n);
         int borrow = 0;
-        for(int i=0;i<n;i++){
-            long temp =(this.num[i]& 0xFFFFFFFFL)-(other.num[i]& 0xFFFFFFFFL)-borrow;
-            if(temp>=0){
-                c.num[i]= (int) temp;
-                borrow=0;
-            }
-            else{
-                c.num[i]= (int) (0x100000000L+temp);
-                borrow=1;
+        for (int i = 0; i < n; i++) {
+            long temp = (this.num[i] & 0xFFFFFFFFL) - (other.num[i] & 0xFFFFFFFFL) - borrow;
+            if (temp >= 0) {
+                c.num[i] = (int) temp;
+                borrow = 0;
+            } else {
+                c.num[i] = (int) (0x100000000L + temp);
+                borrow = 1;
             }
         }
         SubResult result = new SubResult();
-        result.sub=c;
-        result.borrow=borrow;
+        result.sub = c;
+        result.borrow = borrow;
         return result;
     }
 
-    public BigInt longMulOneDigit(BigInt a ,int b){
+    public BigInt longMulOneDigit(BigInt a, int b) {
         BigInt c = new BigInt(n);
-        long carry =0;
-        for(int i=0;i<n;i++){
-            long temp = (a.num[i]& 0xFFFFFFFFL)*(b& 0xFFFFFFFFL)+carry;
-            c.num[i]=(int) (temp& 0xFFFFFFFFL);
-            carry=temp>>w;
-        }
-        c.num[n]= (int) carry;
-        return c;
-    }
-
-    public BigInt longShiftDigitsToHigh(BigInt a,int shift){
-        BigInt c = new BigInt(n);
-        for (int i=0;i+shift<n;i++){
-            c.num[i+shift] =a.num[i];
+        long carry = 0;
+        long bb = b & 0xFFFFFFFFL;
+        for (int i = 0; i < n; i++) {
+            long aa = a.num[i] & 0xFFFFFFFFL;
+            long tmp = aa * bb + carry;
+            c.num[i] = (int)(tmp & 0xFFFFFFFFL);
+            carry = tmp >>> 32;
         }
         return c;
     }
 
-    public BigInt longMul(BigInt a, BigInt b){
-        BigInt c = new BigInt(2*n);
-        for(int i=0;i<n;i++){
-            BigInt temp = longMulOneDigit(a,b.num[i]);
-            temp=longShiftDigitsToHigh(temp,i);
+
+    public BigInt longShiftDigitsToHigh(BigInt a, int shift) {
+        BigInt c = new BigInt(n);
+        if (shift >= n) return c;
+        for (int i = 0; i + shift < n; i++) {
+            c.num[i + shift] = a.num[i];
+        }
+        return c;
+    }
+
+    public BigInt longMul(BigInt a, BigInt b) {
+        BigInt c = new BigInt(2 * n);
+        for (int i = 0; i < n; i++) {
+            BigInt temp = longMulOneDigit(a, b.num[i]);
+            temp = longShiftDigitsToHigh(temp, i);
             AddResult result = c.longAdd(temp);
             c = result.sum;
         }
         return c;
     }
 
-    public BigInt longSquare(BigInt a){
-        BigInt c = new BigInt(2*n);
-        for(int i=0;i<n;i++){
-            for(int j=0;j<n;j++){
+
+    public BigInt longSquare(BigInt a) {
+        BigInt c = new BigInt(2 * n);
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
                 long productPair = (a.num[i] & 0xFFFFFFFFL) * (a.num[j] & 0xFFFFFFFFL);
-                if(i!=j){
-                    productPair=productPair*2;
+                if (i != j) {
+                    productPair = productPair * 2;
                 }
-                int pos=i+j;
+                int pos = i + j;
                 long carry = productPair;
-                while(carry!=0 && pos<2*n){
+                while (carry != 0 && pos < 2 * n) {
                     long sum = c.num[pos] + carry;
-                    if(sum<0x100000000L){
+                    if (sum < 0x100000000L) {
                         c.num[pos] = (int) sum;
-                        carry=0;
-                    }
-                    else {
-                        c.num[pos] = (int) (sum -0x100000000L);
-                        carry=sum / 0x100000000L;
+                        carry = 0;
+                    } else {
+                        c.num[pos] = (int) (sum - 0x100000000L);
+                        carry = sum / 0x100000000L;
                     }
                     pos++;
                 }
@@ -177,76 +188,113 @@ public class BigInt{
         return c;
     }
 
-    public int longCmp(BigInt a, BigInt b){
-        int i=n-1;
-        while (i >= 0 && a.num[i]==b.num[i]){
-            i=i-1;
+    public int longCmp(BigInt a, BigInt b) {
+        int i = n - 1;
+        while (i >= 0 && a.num[i] == b.num[i]) {
+            i = i - 1;
         }
-        if(i == -1){
+        if (i == -1) {
             return 0;
-        }
-        else {
-            if(a.num[i]>b.num[i]){
+        } else {
+            if (a.num[i] > b.num[i]) {
                 return 1;
-            }
-            else{
+            } else {
                 return -1;
             }
         }
     }
 
-    public int BitLength(BigInt a){
-        int i=n-1;
-        while(i>=0 && a.num[i]==0){
-            i=i-1;
+    public int BitLength(BigInt a) {
+        int i = n - 1;
+        while (i >= 0 && a.num[i] == 0) {
+            i--;
         }
-        if(i<0){
+        if (i < 0) {
             return 0;
         }
-        else{
-            int block = a.num[i];
-            int bitPos = 0;
-                while (block > 0) {
-                    block = block >> 1;
-                    bitPos++;
-                }
-            return i * 32 + bitPos;
+        long block = a.num[i] & 0xFFFFFFFFL;
+        int bits = 32;
+        while (bits > 0 && ((block >> (bits - 1)) & 1) == 0) {
+            bits--;
         }
+
+        return i * 32 + bits;
     }
 
-    public class DivModResult{
+
+    public class DivModResult {
         BigInt r;
         BigInt q;
     }
 
-    public DivModResult longDivMod(BigInt a,BigInt b){
-        int k=BitLength(b);
-        BigInt r=a;
-        BigInt q= new BigInt(n);
-        while (longCmp(r, b) >= 0){
-            int t=BitLength(r);
-            BigInt c=longShiftDigitsToHigh(b,(t-k)/32);
-            if(longCmp(r,c)==-1){
-                t=t-1;
-                c=longShiftDigitsToHigh(b,(t-k)/32);
-            }
-            r=r.longSub(c).sub;
-            BigInt temp = new BigInt(n);
-            int shiftBits = t-k;
-            int shiftBlock=shiftBits/32;
-            int posBit=shiftBits%32;
-            temp.num[shiftBlock]= (int) (1L<<posBit);
-            AddResult result = q.longAdd(temp);
-            q=result.sum;
-        }
+    public DivModResult longDivMod(BigInt A, BigInt B) {
+        BigInt R = new BigInt(n);
+        BigInt Q = new BigInt(n);
 
-        DivModResult result = new DivModResult();
-        result.q=q;
-        result.r=r;
-        return result;
+        for (int i = 0; i < n; i++) {
+            R.num[i] = A.num[i];
+        }
+        int k = BitLength(B);
+        while (longCmp(R, B) >= 0) {
+            int t = BitLength(R);
+            int shiftBits = t - k;
+            BigInt C = longShiftBitsToLeft(B, shiftBits);
+            while (longCmp(C, R) > 0) {
+                shiftBits--;
+                C = longShiftBitsToLeft(B, shiftBits);
+            }
+            R = R.longSub(C).sub;
+            int block = shiftBits / 32;
+            int bit = shiftBits % 32;
+            Q.num[block] |= (1 << bit);
+        }
+        DivModResult res = new DivModResult();
+        res.q = Q;
+        res.r = R;
+        return res;
     }
 
 
+
+    public static BigInt longShiftBitsToLeft(BigInt a, int shiftBits) {
+        BigInt c = new BigInt(n);
+        int shiftBlocks = shiftBits / 32;
+        int bitShift = shiftBits % 32;
+        long carry = 0;
+
+        for (int i = 0; i < n; i++) {
+            long cur = (i - shiftBlocks >= 0 ? (a.num[i - shiftBlocks] & 0xFFFFFFFFL) : 0);
+            long shifted = (cur << bitShift) & 0xFFFFFFFFL;
+            shifted |= carry;
+            c.num[i] = (int) shifted;
+            if (bitShift == 0) {
+                carry = 0;
+            }
+            else {
+                carry = (cur >>> (32 - bitShift)) & 0xFFFFFFFFL;
+            }
+        }
+        return c;
+    }
+
+    public static BigInt longShiftBitsToRight(BigInt a, int shiftBits) {
+        int shiftBlock = shiftBits / 32;
+        int posBit = shiftBits % 32;
+        BigInt c = new BigInt(n);
+        for (int i = n - 1; i >= 0; i--) {
+            int indx = i - shiftBlock;
+            if (indx < 0) continue;
+            long shifted = (a.num[i] & 0xFFFFFFFFL) >>> posBit;
+            c.num[indx] = (int)(shifted & 0xFFFFFFFFL);
+            if (posBit != 0 && indx - 1 >= 0) {
+                long carry = (a.num[i] & 0xFFFFFFFFL) << (32 - posBit);
+                c.num[indx - 1] |= (int)(carry & 0xFFFFFFFFL);
+            }
+        }
+        return c;
+    }
+
+    public String toString() {
+        return blockToHex(this.num);
+    }
 }
-
-
