@@ -338,7 +338,19 @@ public class BigInt {
         }
         return longMul(d, a);
     }
+
+    public BigInt lcm(BigInt a,BigInt b){
+       if(longCmp(a,BigInt.constZero())==0 || longCmp(b,BigInt.constZero())==0){
+           return BigInt.constZero();
+       }
+        BigInt d = gcdSteyn(a, b);
+        BigInt mul = longMul(a,b);
+        BigInt.DivModResult div = longDivMod(mul,d);
+        return div.q;
+    }
+
 }
+
 
 
 
