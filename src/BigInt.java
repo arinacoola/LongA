@@ -134,7 +134,7 @@ public class BigInt {
         for (int i = 0; i < n; i++) {
             long aa = a.num[i] & 0xFFFFFFFFL;
             long tmp = aa * bb + carry;
-            c.num[i] = (int)(tmp & 0xFFFFFFFFL);
+            c.num[i] = (int) (tmp & 0xFFFFFFFFL);
             carry = tmp >>> 32;
         }
         return c;
@@ -255,7 +255,6 @@ public class BigInt {
     }
 
 
-
     public static BigInt longShiftBitsToLeft(BigInt a, int shiftBits) {
         BigInt c = new BigInt(n);
         int shiftBlocks = shiftBits / 32;
@@ -269,8 +268,7 @@ public class BigInt {
             c.num[i] = (int) shifted;
             if (bitShift == 0) {
                 carry = 0;
-            }
-            else {
+            } else {
                 carry = (cur >>> (32 - bitShift)) & 0xFFFFFFFFL;
             }
         }
@@ -285,10 +283,10 @@ public class BigInt {
             int indx = i - shiftBlock;
             if (indx < 0) continue;
             long shifted = (a.num[i] & 0xFFFFFFFFL) >>> posBit;
-            c.num[indx] = (int)(shifted & 0xFFFFFFFFL);
+            c.num[indx] = (int) (shifted & 0xFFFFFFFFL);
             if (posBit != 0 && indx - 1 >= 0) {
                 long carry = (a.num[i] & 0xFFFFFFFFL) << (32 - posBit);
-                c.num[indx - 1] |= (int)(carry & 0xFFFFFFFFL);
+                c.num[indx - 1] |= (int) (carry & 0xFFFFFFFFL);
             }
         }
         return c;
@@ -297,4 +295,51 @@ public class BigInt {
     public String toString() {
         return blockToHex(this.num);
     }
+
+    public boolean even(BigInt a) {
+        return (a.num[0] & 1) == 0;
+    }
+
+    public BigInt absDiff(BigInt a, BigInt b) {
+        if (longCmp(a, b) >= 0) {
+            return a.longSub(b).sub;
+        } else {
+            return b.longSub(a).sub;
+        }
+    }
+
+    public BigInt gcdSteyn(BigInt a, BigInt b) {
+        if (longCmp(a, BigInt.constZero()) == 0) {
+            return b;
+        }
+        if (longCmp(b, BigInt.constZero()) == 0) {
+            return a;
+        }
+        BigInt d = BigInt.constOne();
+        while (even(a) && even(b)) {
+            a = longShiftBitsToRight(a, 1);
+            b = longShiftBitsToRight(b, 1);
+            d = longShiftBitsToLeft(d, 1);
+        }
+        while (even(a)) {
+            a = longShiftBitsToRight(a, 1);
+        }
+        while (longCmp(b, BigInt.constZero()) != 0) {
+            while (even(b)) {
+                b = longShiftBitsToRight(b, 1);
+            }
+            if (longCmp(a, b) > 0) {
+                BigInt tmp = a;
+                a = b;
+                b = absDiff(tmp, b);
+            } else {
+                b = absDiff(b, a);
+            }
+        }
+        return longMul(d, a);
+    }
 }
+
+
+
+
