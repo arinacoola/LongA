@@ -358,6 +358,17 @@ public class BigInt {
         return c;
     }
 
+    public BigInt modSub(BigInt a, BigInt b, BigInt n) {
+        BigInt.SubResult result = a.longSub(b);
+        BigInt c = result.sub;
+        if (result.borrow == 1) {
+            c = c.longAdd(n).sum;
+        }
+        if (longCmp(c, n) >= 0) {
+            c = c.longSub(n).sub;
+        }
+        return c;
+    }
 }
 
 
