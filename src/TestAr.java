@@ -1,3 +1,5 @@
+import java.util.Random;
+
 public class TestAr {
     private static String norm(BigInt x) {
         String s = x.toString().replace("0x", "").replace("0X", "").toLowerCase();
@@ -9,6 +11,7 @@ public class TestAr {
     private static void print(String label, BigInt x) {
         System.out.println(label + " = " + norm(x));
     }
+
     private static void checkEq(String msg, BigInt a, BigInt b) {
         if (!norm(a).equals(norm(b))) {
             System.out.println("N0! " + msg + ": our result " + norm(a) + " what is expected " + norm(b));
@@ -17,12 +20,22 @@ public class TestAr {
         }
     }
 
+    static BigInt randomBigInt ( int nVal){
+        java.util.Random rnd = new java.util.Random();
+        BigInt x = new BigInt(nVal);
+        for (int i = 0; i < nVal; i++) {
+            x.num[i] = rnd.nextInt(0xFFFF);
+        }
+        return x;
+    }
+
     public static void main(String[] args) {
         BigInt A = new BigInt(BigInt.n);
         BigInt B = new BigInt(BigInt.n);
         A.num[0] = 0xA5F;
         B.num[0] = 0x1B2;
         BigInt bi = new BigInt(BigInt.n);
+
 
         BigInt.AddResult addAB = A.longAdd(B);
         BigInt.SubResult checkSub = addAB.sum.longSub(B);
@@ -75,15 +88,15 @@ public class TestAr {
 
         print("A^2", sq);
 
-        int launchOp= 10000;
-        long tAdd = 0;
-        long tSub = 0;
-        long tMul = 0;
-        long tSq  = 0;
-        long tDiv = 0;
-        BigInt tmp;
 
+
+        int launchOp = 10000;
+        long tAdd = 0, tSub = 0, tMul = 0, tSq = 0, tDiv = 0;
+        BigInt tmp;
+        Random rnd = new java.util.Random();
         for (int i = 0; i < launchOp; i++) {
+            A = randomBigInt(BigInt.n);
+            B = randomBigInt(BigInt.n);
             long t0 = System.nanoTime();
             tmp = A.longAdd(B).sum;
             long t1 = System.nanoTime();
@@ -91,6 +104,8 @@ public class TestAr {
         }
 
         for (int i = 0; i < launchOp; i++) {
+            A = randomBigInt(BigInt.n);
+            B = randomBigInt(BigInt.n);
             long t0 = System.nanoTime();
             tmp = A.longSub(B).sub;
             long t1 = System.nanoTime();
@@ -98,6 +113,8 @@ public class TestAr {
         }
 
         for (int i = 0; i < launchOp; i++) {
+            A = randomBigInt(BigInt.n);
+            B = randomBigInt(BigInt.n);
             long t0 = System.nanoTime();
             tmp = bi.longMul(A, B);
             long t1 = System.nanoTime();
@@ -105,6 +122,7 @@ public class TestAr {
         }
 
         for (int i = 0; i < launchOp; i++) {
+            A = randomBigInt(BigInt.n);
             long t0 = System.nanoTime();
             tmp = bi.longSquare(A);
             long t1 = System.nanoTime();
@@ -112,17 +130,19 @@ public class TestAr {
         }
 
         for (int i = 0; i < launchOp; i++) {
+            A = randomBigInt(BigInt.n);
+            B = randomBigInt(BigInt.n);
             long t0 = System.nanoTime();
             BigInt.DivModResult r = bi.longDivMod(A, B);
             long t1 = System.nanoTime();
             tDiv += (t1 - t0);
         }
 
-        System.out.println("\nTime measurements(avg ns): ");
-        System.out.printf("Add:  %.2f ns%n", tAdd / (double) launchOp);
-        System.out.printf("Sub:  %.2f ns%n", tSub / (double) launchOp);
-        System.out.printf("Mul:  %.2f ns%n", tMul / (double) launchOp);
-        System.out.printf("Square:  %.2f ns%n", tSq  / (double) launchOp);
+        System.out.println("\nTime measurements with random data (avg ns): ");
+        System.out.printf("Add:     %.2f ns%n", tAdd / (double) launchOp);
+        System.out.printf("Sub:     %.2f ns%n", tSub / (double) launchOp);
+        System.out.printf("Mul:     %.2f ns%n", tMul / (double) launchOp);
+        System.out.printf("Square:  %.2f ns%n", tSq / (double) launchOp);
         System.out.printf("DivMod:  %.2f ns%n", tDiv / (double) launchOp);
     }
 }
