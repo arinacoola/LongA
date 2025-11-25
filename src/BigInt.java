@@ -349,6 +349,15 @@ public class BigInt {
         return div.q;
     }
 
+    public BigInt modAdd(BigInt a, BigInt b, BigInt n) {
+        BigInt.AddResult result = a.longAdd(b);
+        BigInt c = result.sum;
+        if (longCmp(c, n) >= 0) {
+            c = c.longSub(n).sub;
+        }
+        return c;
+    }
+
 }
 
 
