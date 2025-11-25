@@ -29,6 +29,10 @@ public class TestAr {
         return x;
     }
 
+    private static String toBinary(String hex) {
+        return new java.math.BigInteger(hex, 16).toString(2);
+    }
+
     public static void main(String[] args) {
         BigInt A = new BigInt(BigInt.n);
         BigInt B = new BigInt(BigInt.n);
@@ -40,6 +44,8 @@ public class TestAr {
         BigInt.AddResult addAB = A.longAdd(B);
         BigInt.SubResult checkSub = addAB.sum.longSub(B);
         checkEq("(A+B)-B = A", checkSub.sub, A);
+        System.out.println("hex (A+B)-B = " + norm(checkSub.sub));
+        System.out.println("bin (A+B)-B = " + toBinary(norm(checkSub.sub)));
 
 
         BigInt C = new BigInt(BigInt.n);
@@ -50,6 +56,11 @@ public class TestAr {
         BigInt.AddResult AplusB = A.longAdd(B);
         BigInt left = bi.longMul(AplusB.sum, C);
         checkEq("C*(A+B) =(A+B)*C= A*C + B*C", left, ACplusBC.sum);
+        System.out.println("hex C*(A+B) = " + norm(left));
+        System.out.println("hex A*C + B*C = " + norm(ACplusBC.sum));
+        System.out.println("bin C*(A+B) = " + toBinary(norm(left)));
+        System.out.println("bin A*C + B*C = " + toBinary(norm(ACplusBC.sum)));
+
 
 
         int nTimes = 120;
@@ -60,18 +71,28 @@ public class TestAr {
         for (int i = 0; i < nTimes; i++) {
             sumMany = sumMany.longAdd(A).sum;
         }
-        checkEq("n*a = a+...+a (n times)", left_mul, sumMany);
+        checkEq("n*A = A+...+A (n times)", left_mul, sumMany);
+        System.out.println("hex n*A = " + norm(left_mul));
+        System.out.println("hex A + ... + A = " + norm(sumMany));
+        System.out.println("bin n*A = " + toBinary(norm(left_mul)));
+        System.out.println("bin A + ... + A = " + toBinary(norm(sumMany)));
+
 
         BigInt sq = bi.longSquare(A);
         BigInt mulAA = bi.longMul(A, A);
         checkEq("A^2 = A*A", sq, mulAA);
+        System.out.println("hex A^2 = " + norm(sq));
+        System.out.println("hex A*A = " + norm(mulAA));
+        System.out.println("bin A^2 = " + toBinary(norm(sq)));
+        System.out.println("bin A*A = " + toBinary(norm(mulAA)));
 
 
         BigInt.DivModResult divAB = bi.longDivMod(A, B);
         BigInt mulBQ = bi.longMul(B, divAB.q);
         BigInt.AddResult mulPlusR = mulBQ.longAdd(divAB.r);
         checkEq("A = B*Q + R", mulPlusR.sum, A);
-
+        System.out.println("hex B*Q + R = " + norm(mulPlusR.sum));
+        System.out.println("bin B*Q + R = " + toBinary(norm(mulPlusR.sum)));
 
         System.out.println("\nResult:");
         print("A", A);
