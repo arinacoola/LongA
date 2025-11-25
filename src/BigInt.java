@@ -370,7 +370,32 @@ public class BigInt {
         return c;
     }
 
+    public int findK(BigInt x) {
+        int i = BigInt.n - 1;
+        while (i > 0 && x.num[i] == 0) {
+            i--;
+        }
+        return i + 1;
+    }
+
+    public BigInt mu(BigInt n) {
+        int k = findK(n);
+        BigInt bPower = BigInt.constZero();
+        if (2 * k < BigInt.n) {
+            bPower.num[2 * k] = 1;
+        }
+        else {
+            throw new IllegalArgumentException("n is too large");
+        }
+        BigInt.DivModResult div = longDivMod(bPower, n);
+        return div.q;
+    }
+
+
 }
+
+
+
 
 
 
