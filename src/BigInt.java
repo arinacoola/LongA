@@ -370,6 +370,18 @@ public class BigInt {
         return c;
     }
 
+    public BigInt modMul(BigInt a, BigInt b, BigInt n) {
+        BigInt mul = longMul(a, b);
+        BigInt muVal = mu(n);
+        return barrettRedc(mul, n, muVal);
+    }
+
+    public BigInt modSquare(BigInt a, BigInt n) {
+        BigInt sq = longSquare(a);
+        BigInt muVal = mu(n);
+        return barrettRedc(sq, n, muVal);
+    }
+
     public int findK(BigInt x) {
         int i = BigInt.n - 1;
         while (i > 0 && x.num[i] == 0) {
@@ -380,16 +392,84 @@ public class BigInt {
 
     public BigInt mu(BigInt n) {
         int k = findK(n);
-        BigInt bPower = BigInt.constZero();
+        BigInt betaPower = BigInt.constZero();
         if (2 * k < BigInt.n) {
-            bPower.num[2 * k] = 1;
+            betaPower.num[2 * k] = 1;
         }
         else {
-            throw new IllegalArgumentException("n is too large");
+            throw new IllegalArgumentException("n is too large for Barrett mu");
         }
-        BigInt.DivModResult div = longDivMod(bPower, n);
+
+        DivModResult div = longDivMod(betaPower, n);
         return div.q;
     }
+
+    private BigInt killLastDigits(BigInt a, int digits) {
+        BigInt res = BigInt.constZero();
+        int len = a.num.length;
+        if (digits >= len) {
+            return res;
+        }
+        int assignmentInd = 0;
+        for (int src = digits; src < len && assignmentInd < BigInt.n; src++, assignmentInd++) {
+            res.num[assignmentInd] = a.num[src];
+        }
+        return res;
+    }
+
+    public BigInt barrettRedc(BigInt x,BigInt n,BigInt mu){
+        int k=findK(n);
+        BigInt q=killLastDigits(x,k-1);
+        q=longMul(q,mu);
+        q=killLastDigits(q,k+1);
+        BigInt tmp = longMul(q, n);
+        BigInt r = x.longSub(tmp).sub;
+        while (longCmp(r, n) >= 0){
+            r = r.longSub(n).sub;
+        }
+        return r;
+    }
+
+    public int getBit(BigInt a, int bitIndex) {
+        int block = bitIndex / 32;
+        int bitPos = bitIndex % 32;
+        if (block >= BigInt.n) {
+            return 0;
+        }
+        return (a.num[block] >>> bitPos) & 1;
+    }
+
+    public BigInt longModPowerBarrett(BigInt a,BigInt b,BigInt n){
+        BigInt muVal = mu(n);
+        BigInt c=BigInt.constOne();
+        int l=BitLength(b);
+        for(int i=0;i<l;i++){
+            if(getBit(b,i)==1){
+                BigInt mul = longMul(c, a);
+                c = barrettRedc(mul, n, muVal);
+            }
+            BigInt sq = longSquare(a);
+            a = barrettRedc(sq, n, muVal);
+        }
+        return c;
+    }
+
+    /*public boolean millerRabin(BigInt n,int numRepeats){
+        if (longCmp(n, constOne()) == 0 || longCmp(n, constZero()) == 0) {
+            return false;
+        }
+        BigInt two=new BigInt(n);
+        two.num[0]=2;
+        if (longCmp(n, two) == 0) {
+            return true;
+        }
+
+
+    }*/
+
+
+
+
 
 
 }
