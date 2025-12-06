@@ -1,6 +1,6 @@
 import java.util.Random;
 
-public class TestAr {
+public class TestBigInt {
     private static String norm(BigInt x) {
         String s = x.toString().replace("0x", "").replace("0X", "").toLowerCase();
         int i = 0;

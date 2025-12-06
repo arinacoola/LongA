@@ -1,3 +1,5 @@
+import java.util.Random;
+
 public class BigInt {
     public final static int w = 32;
     int[] num;
@@ -454,24 +456,72 @@ public class BigInt {
         return c;
     }
 
-    /*public boolean millerRabin(BigInt n,int numRepeats){
+    public boolean millerRabin(BigInt n,int numRepeats){
         if (longCmp(n, constOne()) == 0 || longCmp(n, constZero()) == 0) {
             return false;
         }
-        BigInt two=new BigInt(n);
+        BigInt two=new BigInt(BigInt.n);
         two.num[0]=2;
         if (longCmp(n, two) == 0) {
             return true;
         }
 
+        BigInt nMinusOne = n.longSub(constOne()).sub;
+        BigInt t = new BigInt(BigInt.n);
+        for (int i = 0; i < n.num.length; i++) {
+            t.num[i] = nMinusOne.num[i];
+        }
+        int s = 0;
+        while (even(t)) {
+            t = longShiftBitsToRight(t, 1);
+            s++;
+        }
 
-    }*/
+        for (int i=0;i<numRepeats;i++){
+            BigInt x = rndFrom1toNminus1(n);
+            BigInt d = gcdSteyn(x, n);
+            if (longCmp(d, constOne()) != 0) {
+                return false;
+            }
+            BigInt y = longModPowerBarrett(x, t, n);
+            if (longCmp(y, constOne()) == 0 || longCmp(y, nMinusOne) == 0) {
+                continue;
+            }
+            boolean foundMinusOne = false;
+            for (int j = 1; j < s; j++) {
+                y = modSquare(y, n);
+                if (longCmp(y, nMinusOne) == 0) {
+                    foundMinusOne = true;
+                    break;
+                }
+                if (longCmp(y, constOne()) == 0) {
+                    return false;
+                }
+            }
+            if (!foundMinusOne){
+                return false;
+            }
+        }
+        return true;
+    }
 
-
-
-
-
-
+    public BigInt rndFrom1toNminus1(BigInt n) {
+        BigInt one = constOne();
+        BigInt nMinusOne = n.longSub(one).sub;
+        BigInt r = new BigInt(BigInt.n);
+        Random rnd = new Random();
+        while (true) {
+            for (int i = 0; i < BigInt.n; i++) {
+                r.num[i] = rnd.nextInt();
+            }
+            BigInt two = new BigInt(BigInt.n);
+            two.num[0] = 2;
+            BigInt nMinusTwo = n.longSub(two).sub;
+            if (longCmp(r, two) >= 0 && longCmp(r, nMinusTwo) <= 0){
+                return r;
+            }
+        }
+    }
 }
 
 
