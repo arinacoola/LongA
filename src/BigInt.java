@@ -351,37 +351,41 @@ public class BigInt {
         return div.q;
     }
 
-    public BigInt modAdd(BigInt a, BigInt b, BigInt n) {
-        BigInt.AddResult result = a.longAdd(b);
-        BigInt c = result.sum;
-        if (longCmp(c, n) >= 0) {
-            c = c.longSub(n).sub;
+    public BigInt modAdd(BigInt a, BigInt b, BigInt n, BigInt mu) {
+        BigInt aRed = barrettRedc(a, n, mu);
+        BigInt bRed = barrettRedc(b, n, mu);
+        BigInt sum = aRed.longAdd(bRed).sum;
+        if (longCmp(sum, n) >= 0) {
+            sum = sum.longSub(n).sub;
         }
-        return c;
+        return sum;
     }
 
-    public BigInt modSub(BigInt a, BigInt b, BigInt n) {
-        BigInt.SubResult result = a.longSub(b);
-        BigInt c = result.sub;
-        if (result.borrow == 1) {
-            c = c.longAdd(n).sum;
+    public BigInt modSub(BigInt a, BigInt b, BigInt n, BigInt mu) {
+        BigInt aRed = barrettRedc(a, n, mu);
+        BigInt bRed = barrettRedc(b, n, mu);
+        BigInt.SubResult s = aRed.longSub(bRed);
+        BigInt diff = s.sub;
+        if (s.borrow == 1) {
+            diff = diff.longAdd(n).sum;
         }
-        if (longCmp(c, n) >= 0) {
-            c = c.longSub(n).sub;
-        }
-        return c;
+        return diff;
     }
 
-    public BigInt modMul(BigInt a, BigInt b, BigInt n) {
+    public BigInt modMul(BigInt a, BigInt b, BigInt n, BigInt mu) {
         BigInt mul = longMul(a, b);
-        BigInt muVal = mu(n);
-        return barrettRedc(mul, n, muVal);
+        return barrettRedc(mul, n, mu);
     }
+
 
     public BigInt modSquare(BigInt a, BigInt n) {
         BigInt sq = longSquare(a);
         BigInt muVal = mu(n);
         return barrettRedc(sq, n, muVal);
+    }
+    public BigInt modSquare(BigInt a, BigInt n, BigInt mu) {
+        BigInt sq = longSquare(a);
+        return barrettRedc(sq, n, mu);
     }
 
     public int findK(BigInt x) {
@@ -421,6 +425,9 @@ public class BigInt {
 
     public BigInt barrettRedc(BigInt x,BigInt n,BigInt mu){
         int k=findK(n);
+        if (k == 1) {
+            return longDivMod(x, n).r;
+        }
         BigInt q=killLastDigits(x,k-1);
         q=longMul(q,mu);
         q=killLastDigits(q,k+1);
@@ -441,87 +448,22 @@ public class BigInt {
         return (a.num[block] >>> bitPos) & 1;
     }
 
-    public BigInt longModPowerBarrett(BigInt a,BigInt b,BigInt n){
-        BigInt muVal = mu(n);
-        BigInt c=BigInt.constOne();
-        int l=BitLength(b);
-        for(int i=0;i<l;i++){
-            if(getBit(b,i)==1){
-                BigInt mul = longMul(c, a);
-                c = barrettRedc(mul, n, muVal);
+    public BigInt longModPowerBarrett(BigInt a, BigInt b, BigInt n, BigInt mu) {
+        a = barrettRedc(a, n, mu);
+        BigInt c = BigInt.constOne();
+        int l = BitLength(b);
+        for (int i = 0; i < l; i++) {
+            if (getBit(b, i) == 1) {
+                c = barrettRedc(longMul(c, a), n, mu);
             }
-            BigInt sq = longSquare(a);
-            a = barrettRedc(sq, n, muVal);
+            a = barrettRedc(longSquare(a), n, mu);
         }
         return c;
     }
 
-    public boolean millerRabin(BigInt n,int numRepeats){
-        if (longCmp(n, constOne()) == 0 || longCmp(n, constZero()) == 0) {
-            return false;
-        }
-        BigInt two=new BigInt(BigInt.n);
-        two.num[0]=2;
-        if (longCmp(n, two) == 0) {
-            return true;
-        }
 
-        BigInt nMinusOne = n.longSub(constOne()).sub;
-        BigInt t = new BigInt(BigInt.n);
-        for (int i = 0; i < n.num.length; i++) {
-            t.num[i] = nMinusOne.num[i];
-        }
-        int s = 0;
-        while (even(t)) {
-            t = longShiftBitsToRight(t, 1);
-            s++;
-        }
 
-        for (int i=0;i<numRepeats;i++){
-            BigInt x = rndFrom1toNminus1(n);
-            BigInt d = gcdSteyn(x, n);
-            if (longCmp(d, constOne()) != 0) {
-                return false;
-            }
-            BigInt y = longModPowerBarrett(x, t, n);
-            if (longCmp(y, constOne()) == 0 || longCmp(y, nMinusOne) == 0) {
-                continue;
-            }
-            boolean foundMinusOne = false;
-            for (int j = 1; j < s; j++) {
-                y = modSquare(y, n);
-                if (longCmp(y, nMinusOne) == 0) {
-                    foundMinusOne = true;
-                    break;
-                }
-                if (longCmp(y, constOne()) == 0) {
-                    return false;
-                }
-            }
-            if (!foundMinusOne){
-                return false;
-            }
-        }
-        return true;
-    }
 
-    public BigInt rndFrom1toNminus1(BigInt n) {
-        BigInt one = constOne();
-        BigInt nMinusOne = n.longSub(one).sub;
-        BigInt r = new BigInt(BigInt.n);
-        Random rnd = new Random();
-        while (true) {
-            for (int i = 0; i < BigInt.n; i++) {
-                r.num[i] = rnd.nextInt();
-            }
-            BigInt two = new BigInt(BigInt.n);
-            two.num[0] = 2;
-            BigInt nMinusTwo = n.longSub(two).sub;
-            if (longCmp(r, two) >= 0 && longCmp(r, nMinusTwo) <= 0){
-                return r;
-            }
-        }
-    }
 }
 
 
