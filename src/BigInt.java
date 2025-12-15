@@ -1,5 +1,3 @@
-import java.util.Random;
-
 public class BigInt {
     public final static int w = 32;
     int[] num;
@@ -17,7 +15,6 @@ public class BigInt {
                 string = string.substring(2);
             }
         }
-
         string = string.toUpperCase();
         return string;
     }
@@ -95,9 +92,9 @@ public class BigInt {
         BigInt c = new BigInt(n);
         long carry = 0;
         for (int i = 0; i < n; i++) {
-            long temp = this.num[i] + other.num[i] + carry;
+            long temp = (this.num[i] & 0xFFFFFFFFL) + (other.num[i] & 0xFFFFFFFFL) + carry;
             c.num[i] = (int) (temp & 0xFFFFFFFFL);
-            carry = temp >> w;
+            carry = temp >>> 32;
         }
         AddResult result = new AddResult();
         result.sum = c;
@@ -155,42 +152,34 @@ public class BigInt {
     public BigInt longMul(BigInt a, BigInt b) {
         BigInt c = new BigInt(2 * n);
         for (int i = 0; i < n; i++) {
-            BigInt temp = longMulOneDigit(a, b.num[i]);
-            temp = longShiftDigitsToHigh(temp, i);
-            AddResult result = c.longAdd(temp);
-            c = result.sum;
-        }
-        return c;
-    }
-
-
-    public BigInt longSquare(BigInt a) {
-        BigInt c = new BigInt(2 * n);
-        for (int i = 0; i < n; i++) {
+            long bb = b.num[i] & 0xFFFFFFFFL;
+            long carry = 0;
             for (int j = 0; j < n; j++) {
-                long productPair = (a.num[i] & 0xFFFFFFFFL) * (a.num[j] & 0xFFFFFFFFL);
-                if (i != j) {
-                    productPair = productPair * 2;
-                }
                 int pos = i + j;
-                long carry = productPair;
-                while (carry != 0 && pos < 2 * n) {
-                    long sum = c.num[pos] + carry;
-                    if (sum < 0x100000000L) {
-                        c.num[pos] = (int) sum;
-                        carry = 0;
-                    } else {
-                        c.num[pos] = (int) (sum - 0x100000000L);
-                        carry = sum / 0x100000000L;
-                    }
-                    pos++;
-                }
+                long cur = c.num[pos] & 0xFFFFFFFFL;
+                long prod = (a.num[j] & 0xFFFFFFFFL) * bb;
+                long tmp = cur + prod + carry;
+                c.num[pos] = (int) (tmp & 0xFFFFFFFFL);
+                carry = tmp >>> 32;
+            }
+            int pos = i + n;
+            while (carry != 0 && pos < 2 * n) {
+                long tmp = (c.num[pos] & 0xFFFFFFFFL) + carry;
+                c.num[pos] = (int) (tmp & 0xFFFFFFFFL);
+                carry = tmp >>> 32;
+                pos++;
             }
         }
         return c;
     }
 
+    public BigInt longSquare(BigInt a) {
+        return longMul(a, a);
+    }
+
     public int longCmp(BigInt a, BigInt b) {
+        int lena = a.num.length > BigInt.n ? BigInt.n : a.num.length;
+        int lenb = b.num.length > BigInt.n ? BigInt.n : b.num.length;
         int i = n - 1;
         while (i >= 0 && a.num[i] == b.num[i]) {
             i = i - 1;
@@ -198,7 +187,7 @@ public class BigInt {
         if (i == -1) {
             return 0;
         } else {
-            if (a.num[i] > b.num[i]) {
+            if ((a.num[i] & 0xFFFFFFFFL) > (b.num[i] & 0xFFFFFFFFL)) {
                 return 1;
             } else {
                 return -1;
@@ -230,6 +219,10 @@ public class BigInt {
     }
 
     public DivModResult longDivMod(BigInt A, BigInt B) {
+        if (longCmp(B, BigInt.constZero()) == 0) {
+            throw new ArithmeticException("division by zero in longDivMod");
+        }
+
         BigInt R = new BigInt(n);
         BigInt Q = new BigInt(n);
 
@@ -256,6 +249,29 @@ public class BigInt {
         return res;
     }
 
+    public BigInt longPower(BigInt a, BigInt b) {
+        BigInt aSqB = BigInt.constOne();
+        int bitLen = BitLength(b);
+        for (int i = bitLen - 1; i >= 0; i--) {
+            if (bitReview(b, i)) {
+                aSqB = longMul(aSqB, a);
+            }
+            if (i != 0) {
+                aSqB = longMul(aSqB, aSqB);
+            }
+        }
+        return aSqB;
+    }
+    public boolean bitReview(BigInt b, int i) {
+        int word = i / 32;
+        int bit  = i % 32;
+        if (word >= b.num.length) {
+            return false;
+        }
+        return ((b.num[word] >>> bit) & 1) == 1;
+    }
+
+
 
     public static BigInt longShiftBitsToLeft(BigInt a, int shiftBits) {
         BigInt c = new BigInt(n);
@@ -265,7 +281,7 @@ public class BigInt {
 
         for (int i = 0; i < n; i++) {
             long cur = (i - shiftBlocks >= 0 ? (a.num[i - shiftBlocks] & 0xFFFFFFFFL) : 0);
-            long shifted = (cur << bitShift) & 0xFFFFFFFFL;
+            long shifted = ((cur << bitShift) & 0xFFFFFFFFL);
             shifted |= carry;
             c.num[i] = (int) shifted;
             if (bitShift == 0) {
@@ -275,6 +291,58 @@ public class BigInt {
             }
         }
         return c;
+    }
+
+    public static void shiftRightInPlace(BigInt a, int shiftBits) {
+        if (shiftBits == 0) return;
+        int shiftBlocks = shiftBits / 32;
+        int bitShift = shiftBits % 32;
+        int nlen = a.num.length;
+        if (shiftBlocks >= nlen) {
+            for (int i = 0; i < nlen; i++) a.num[i] = 0;
+            return;
+        }
+        if (bitShift == 0) {
+            for (int i = 0; i < nlen; i++) {
+                int src = i + shiftBlocks;
+                a.num[i] = (src < nlen) ? a.num[src] : 0;
+            }
+            return;
+        }
+        for (int i = 0; i < nlen; i++) {
+            int src = i + shiftBlocks;
+            long low = 0;
+            if (src < nlen) low = (a.num[src] & 0xFFFFFFFFL) >>> bitShift;
+            long high = 0;
+            if (src + 1 < nlen) high = (a.num[src + 1] & 0xFFFFFFFFL) << (32 - bitShift);
+            a.num[i] = (int) ((low | high) & 0xFFFFFFFFL);
+        }
+    }
+
+    public static void shiftLeftInPlace(BigInt a, int shiftBits) {
+        if (shiftBits == 0) return;
+        int shiftBlocks = shiftBits / 32;
+        int bitShift = shiftBits % 32;
+        int nlen = a.num.length;
+        if (shiftBlocks >= nlen) {
+            for (int i = 0; i < nlen; i++) a.num[i] = 0;
+            return;
+        }
+        if (bitShift == 0) {
+            for (int i = nlen - 1; i >= 0; i--) {
+                int src = i - shiftBlocks;
+                a.num[i] = (src >= 0) ? a.num[src] : 0;
+            }
+            return;
+        }
+        for (int i = nlen - 1; i >= 0; i--) {
+            int src = i - shiftBlocks;
+            long high = 0;
+            if (src >= 0) high = ((a.num[src] & 0xFFFFFFFFL) << bitShift) & 0xFFFFFFFFL;
+            long low = 0;
+            if (src - 1 >= 0) low = (a.num[src - 1] & 0xFFFFFFFFL) >>> (32 - bitShift);
+            a.num[i] = (int) ((high | low) & 0xFFFFFFFFL);
+        }
     }
 
     public static BigInt longShiftBitsToRight(BigInt a, int shiftBits) {
@@ -311,40 +379,45 @@ public class BigInt {
     }
 
     public BigInt gcdSteyn(BigInt a, BigInt b) {
-        if (longCmp(a, BigInt.constZero()) == 0) {
-            return b;
+        BigInt aa = new BigInt(n);
+        BigInt bb = new BigInt(n);
+        System.arraycopy(a.num, 0, aa.num, 0, n);
+        System.arraycopy(b.num, 0, bb.num, 0, n);
+
+        if (longCmp(aa, BigInt.constZero()) == 0) {
+            return bb;
         }
-        if (longCmp(b, BigInt.constZero()) == 0) {
-            return a;
+        if (longCmp(bb, BigInt.constZero()) == 0) {
+            return aa;
         }
         BigInt d = BigInt.constOne();
-        while (even(a) && even(b)) {
-            a = longShiftBitsToRight(a, 1);
-            b = longShiftBitsToRight(b, 1);
-            d = longShiftBitsToLeft(d, 1);
+        while (even(aa) && even(bb)) {
+            shiftRightInPlace(aa, 1);
+            shiftRightInPlace(bb, 1);
+            shiftLeftInPlace(d, 1);
         }
-        while (even(a)) {
-            a = longShiftBitsToRight(a, 1);
+        while (even(aa)) {
+            shiftRightInPlace(aa, 1);
         }
-        while (longCmp(b, BigInt.constZero()) != 0) {
-            while (even(b)) {
-                b = longShiftBitsToRight(b, 1);
+        while (longCmp(bb, BigInt.constZero()) != 0) {
+            while (even(bb)) {
+                shiftRightInPlace(bb, 1);
             }
-            if (longCmp(a, b) > 0) {
-                BigInt tmp = a;
-                a = b;
-                b = absDiff(tmp, b);
+            if (longCmp(aa, bb) > 0) {
+                BigInt tmp = aa;
+                aa = bb;
+                bb = absDiff(tmp, bb);
             } else {
-                b = absDiff(b, a);
+                bb = absDiff(bb, aa);
             }
         }
-        return longMul(d, a);
+        return longMul(d, aa);
     }
 
     public BigInt lcm(BigInt a,BigInt b){
-       if(longCmp(a,BigInt.constZero())==0 || longCmp(b,BigInt.constZero())==0){
-           return BigInt.constZero();
-       }
+        if(longCmp(a,BigInt.constZero())==0 || longCmp(b,BigInt.constZero())==0){
+            return BigInt.constZero();
+        }
         BigInt d = gcdSteyn(a, b);
         BigInt mul = longMul(a,b);
         BigInt.DivModResult div = longDivMod(mul,d);
@@ -423,17 +496,27 @@ public class BigInt {
         return res;
     }
 
-    public BigInt barrettRedc(BigInt x,BigInt n,BigInt mu){
-        int k=findK(n);
+    public BigInt barrettRedc(BigInt x, BigInt n, BigInt mu) {
+        int k = findK(n);
         if (k == 1) {
-            return longDivMod(x, n).r;
+            long nVal = n.num[0] & 0xFFFFFFFFL;
+            if (nVal == 0) {
+                throw new ArithmeticException("modulus n is zero");
+            }
+            long rem = 0;
+            for (int i = x.num.length - 1; i >= 0; i--) {
+                rem = ((rem << 32) + (x.num[i] & 0xFFFFFFFFL)) % nVal;
+            }
+            BigInt r = new BigInt(BigInt.n);
+            r.num[0] = (int) rem;
+            return r;
         }
-        BigInt q=killLastDigits(x,k-1);
-        q=longMul(q,mu);
-        q=killLastDigits(q,k+1);
+        BigInt q = killLastDigits(x, k - 1);
+        q = longMul(q, mu);
+        q = killLastDigits(q, k + 1);
         BigInt tmp = longMul(q, n);
         BigInt r = x.longSub(tmp).sub;
-        while (longCmp(r, n) >= 0){
+        while (longCmp(r, n) >= 0) {
             r = r.longSub(n).sub;
         }
         return r;
@@ -461,15 +544,4 @@ public class BigInt {
         return c;
     }
 
-
-
-
 }
-
-
-
-
-
-
-
-
