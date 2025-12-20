@@ -1,7 +1,7 @@
 import java.util.Locale;
 
 public class BigInt {
-    public static final int n = 256; // 256 * 32 = 8192 bits
+    public static final int n = 256; 
     private final int[] a = new int[n];
     public boolean errorFlag = false;
 
