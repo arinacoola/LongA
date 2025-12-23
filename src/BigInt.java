@@ -140,15 +140,6 @@ public class BigInt {
         return (a[pos / 32] >>> (pos % 32)) & 1;
     }
 
-    public long extractBit(int i) {
-        if (i < 0 || i >= n * 32) {
-            return 0;
-        }
-        int block = i / 32;
-        int bit = i % 32;
-        return (a[block] >>> bit) & 1L;
-    }
-
     public BigInt shiftLeft(int bits) {
         if (bits <= 0) {
             if (bits == 0) {
@@ -438,7 +429,8 @@ public class BigInt {
     }
 
     public BigInt modSq(BigInt mod) {
-        return this.longSq().mod(mod);
+        BigInt mu = BigInt.mu(mod);
+        return this.longSq().barrettRedc(mod,mu);
     }
 
     public BigInt longModPowerBarrett(BigInt exp, BigInt mod) {
